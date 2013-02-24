@@ -10,7 +10,7 @@ module ActiveFile
     def save
         @new_record = false # seta objeto como registro existente
 
-        File.open("db/dvds/#{@id}.yml", "w") do |file|
+        File.open("db/revistas/#{@id}.yml", "w") do |file|
             file.puts serialize
         end
     end
@@ -18,7 +18,7 @@ module ActiveFile
     def destroy(id)
         unless @destroyed or @new_record
             @destroyed = true
-            FileUtils.rm "db/dvds/#{@id}.yml"
+            FileUtils.rm "db/revistas/#{@id}.yml"
         end
     end
 
@@ -44,12 +44,12 @@ module ActiveFile
       end
       
       def find(id)
-        raise DocumentNotFound, "Arquivo db/dvds/#{id} nao encontrado.", caller unless File.exists?("db/dvds/#{id}.yml")
-        deserialize "db/dvds/#{id}.yml"
+        raise DocumentNotFound, "Arquivo db/revistas/#{id} nao encontrado.", caller unless File.exists?("db/revistas/#{id}.yml")
+        deserialize "db/revistas/#{id}.yml"
       end
       
       def next_id
-          Dir.glob("db/dvds/*.yml").size + 1
+          Dir.glob("db/revistas/*.yml").size + 1
       end
       
       def method_missing(name, *args, &block)
@@ -64,7 +64,7 @@ module ActiveFile
       private    
       
       def load_all
-        Dir.glob('db/dvds/*.yml').map do |file|
+        Dir.glob('db/revistas/*.yml').map do |file|
           deserialize file
         end
       end
