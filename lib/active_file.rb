@@ -1,5 +1,6 @@
 # coding utf-8
 
+require "yaml"
 require "FileUtils"
 require "active_file/version"
 
@@ -23,46 +24,43 @@ module ActiveFile
     end
 
     module ClassMethods
-      def field(name)
+      def field(name, required: false, default: "")
         @fields ||= []
-        @fields << name
+        @fields << Field.new(name, required, default)
 
-        get = %Q{
-            def #{name}
-                @#{name}
+        self.class_eval %Q$
+            attr_accessor *#{@fields.map(&:name)}
+            attr_reader :id, :destroyed, :new_record
+
+            def initialize(#{@fields.map(&:to_argument).join(", ")})
+                @id = self.class.next_id
+                @destroyed = false
+                @new_record = true
+                #{@fields.map(&:to_assign).join("\n")}
             end
-        }
-
-        set = %Q{
-            def #{name}=(valor)
-                @#{name}=valor
-            end
-        }
-
-        self.class_eval get
-        self.class_eval set
+        $
       end
-      
+
       def find(id)
         raise DocumentNotFound, "Arquivo db/revistas/#{id} nao encontrado.", caller unless File.exists?("db/revistas/#{id}.yml")
         deserialize "db/revistas/#{id}.yml"
       end
-      
+
       def next_id
           Dir.glob("db/revistas/*.yml").size + 1
       end
-      
+
       def method_missing(name, *args, &block)
         field = name.to_s.split("_").last
-        super if @fields.include? field 
-        
+        super if @fields.map(&:name).include? field
+
         load_all.select do |object|
           object.send(field) == args.first
         end
       end
-      
-      private    
-      
+
+      private
+
       def load_all
         Dir.glob('db/revistas/*.yml').map do |file|
           deserialize file
@@ -74,19 +72,24 @@ module ActiveFile
       end
     end
 
+    class Field
+      attr_reader :name, :required, :default
+
+      def initialize(name, required, default)
+        @name, @required, @default = name, required, default
+      end
+
+      def to_argument
+        "#{@name}: #{@default}"
+      end
+
+      def to_assign
+        "@#{@name} = #{@name}"
+      end
+    end
+
     def self.included(base)
         base.extend ClassMethods
-        base.class_eval do
-          def initialize(parameters = {})
-              @id = self.class.next_id
-              @destroyed = false
-              @new_record = true
-
-              parameters.each do |key, value|
-                  instance_variable_set "@#{key}", value
-              end
-          end
-        end
     end
 
     private
