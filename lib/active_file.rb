@@ -1,7 +1,7 @@
 # coding utf-8
 
 require "yaml"
-require "FileUtils"
+require "fileutils"
 require "active_file/version"
 
 require "rake"
